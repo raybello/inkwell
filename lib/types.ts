@@ -23,6 +23,12 @@ export interface Project {
   type: ProjectType;
   genre: string | null;
   cover_image_url: string | null;
+  /** Editable cover layer documents (see lib/cover-art.ts). */
+  cover_front?: unknown;
+  cover_back?: unknown;
+  /** Rendered PNGs used by library cards and every export. */
+  cover_front_url?: string | null;
+  cover_back_url?: string | null;
   description: string | null;
   target_word_count: number | null;
   publishing_target: string | null;

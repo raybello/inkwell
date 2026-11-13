@@ -246,7 +246,7 @@ export function StoryboardCard({
         </div>
 
         {/* ---------------- caption on index-card stock ---------------- */}
-        <div className="relative flex flex-1 flex-col border-t border-ink-950/10 bg-paper px-3.5 pb-3 pt-2.5 text-ink-900">
+        <div className="relative flex flex-1 flex-col border-t border-ink-950/10 bg-paper px-3.5 pb-3 pt-2.5 text-paper-ink">
           <div className="flex items-center gap-2">
             <span className="font-mono text-[9.5px] uppercase tracking-[0.2em] text-ink-500">
               {number}
@@ -259,7 +259,7 @@ export function StoryboardCard({
 
           <Link
             href={card.href}
-            className="mt-1 line-clamp-2 font-serif text-[17px] font-semibold leading-[1.25] tracking-[-0.01em] text-ink-950 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-deep/50"
+            className="mt-1 line-clamp-2 font-serif text-[17px] font-semibold leading-[1.25] tracking-[-0.01em] text-paper-ink underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-deep/50"
           >
             {card.title}
           </Link>

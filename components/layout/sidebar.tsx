@@ -91,7 +91,7 @@ export function Sidebar({
 
           <Link
             href="/app/projects/new"
-            className="flex items-center gap-2 rounded-md bg-accent px-2.5 py-1.5 text-[13px] font-medium text-ink-950 transition hover:bg-accent-soft"
+            className="flex items-center gap-2 rounded-md bg-accent px-2.5 py-1.5 text-[13px] font-medium text-on-accent transition hover:opacity-90"
           >
             <Plus className="size-3.5" />
             New project
@@ -150,37 +150,26 @@ export function Sidebar({
         </div>
 
         <div className="border-t border-border p-3">
-          {user.isAdmin ? (
-            <Link
-              href="/app/settings/billing"
-              className="mb-3 flex items-center gap-2 rounded-lg border border-sage/30 bg-sage/10 px-2.5 py-2 text-[12px] text-sage transition hover:bg-sage/15"
-            >
-              <Sparkles className="size-3.5 shrink-0" />
-              <span className="flex-1 leading-tight">Unlimited access</span>
-              <ChevronRight className="size-3" />
-            </Link>
-          ) : (
-            <Link
-              href="/app/settings/billing"
-              className="mb-3 flex items-center gap-2 rounded-lg border border-accent/25 bg-accent/8 px-2.5 py-2 text-[12px] text-accent-soft transition hover:bg-accent/12"
-            >
-              <Sparkles className="size-3.5 shrink-0" />
-              <span className="flex-1 leading-tight">
-                {user.plan === "free" ? "Free plan" : `${user.plan[0].toUpperCase()}${user.plan.slice(1)} plan`}
-                {" · "}
-                {user.projectLimit == null
-                  ? "unlimited projects"
-                  : `${projects.length} of ${user.projectLimit} project${user.projectLimit === 1 ? "" : "s"}`}
-              </span>
-              <ChevronRight className="size-3" />
-            </Link>
-          )}
           <div className="flex items-center gap-2">
             <Avatar name={user.name} src={user.avatar} size={28} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[13px] leading-tight">{user.name}</p>
-              <p className="truncate text-[11px] text-muted">{formatNumber(projects.length)} {projects.length === 1 ? "project" : "projects"}</p>
+              <p className="truncate text-[11px] text-muted">
+                {user.isAdmin
+                  ? "Unlimited access"
+                  : user.plan === "free"
+                    ? `Free plan · ${projects.length}/${user.projectLimit ?? "∞"}`
+                    : `${user.plan[0].toUpperCase()}${user.plan.slice(1)} · ${projects.length} project${projects.length === 1 ? "" : "s"}`}
+              </p>
             </div>
+            <Link
+              href="/app/settings/billing"
+              className="rounded-md p-1.5 text-muted transition hover:bg-ink-800 hover:text-foreground"
+              aria-label="Plans and billing"
+              title="Plans and billing"
+            >
+              <Sparkles className="size-3.5" />
+            </Link>
             <form action={signOutAction}>
               <button className="rounded-md p-1.5 text-muted hover:bg-ink-800 hover:text-foreground" title="Sign out">
                 <LogOut className="size-3.5" />

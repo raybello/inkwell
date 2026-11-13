@@ -187,7 +187,7 @@ export function UnsplashPicker({
                   </span>
                   <span className="block truncate px-2 py-1 text-[10px] text-muted">{photo.credit}</span>
                   {selected && (
-                    <span className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-accent text-ink-950">
+                    <span className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-accent text-on-accent">
                       <Check className="size-3" aria-hidden />
                     </span>
                   )}

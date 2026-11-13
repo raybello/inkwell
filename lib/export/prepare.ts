@@ -111,7 +111,12 @@ export function buildExportDocument(input: GenerateExportInput): ExportDocument 
     description: input.project.description?.trim() || null,
     genre: input.project.genre?.trim() || null,
     language,
-    coverUrl: input.project.cover_image_url?.trim() || null,
+    coverUrl:
+      (input.project as unknown as { cover_front_url?: string | null }).cover_front_url?.trim() ||
+      input.project.cover_image_url?.trim() ||
+      null,
+    backCoverUrl:
+      (input.project as unknown as { cover_back_url?: string | null }).cover_back_url?.trim() || null,
     chapters,
     assets: (input.assets ?? []).map((asset: Asset) => ({
       id: asset.id,

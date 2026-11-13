@@ -9,7 +9,7 @@ export function AssetsTabs({ projectId, active }: { projectId: string; active: "
   const base = `/app/projects/${projectId}/assets`;
   const tabs = [
     { id: "assets", label: "Assets", href: base, icon: ImageIcon },
-    { id: "cover", label: "Cover studio", href: `${base}/cover`, icon: Palette },
+    { id: "cover", label: "Cover", href: `/app/projects/${projectId}/cover`, icon: Palette },
   ] as const;
 
   return (

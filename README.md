@@ -49,8 +49,9 @@ and plan quotas are skipped in server actions and the billing screen.
 | Project overview, outline tree, notes | `/app/projects/[id]` |
 | Writing editor, versions, find & replace, realtime | `/app/projects/[id]/editor/[chapterId]` |
 | Storyboard, corkboard | `/app/projects/[id]/storyboard`, `.../corkboard` |
+| Cover art (front + back, layer editor) | `/app/projects/[id]/cover` |
 | Whiteboard canvas | `/app/projects/[id]/canvas`, `.../canvas/[canvasId]` |
-| Asset library, cover studio | `/app/projects/[id]/assets` |
+| Asset library | `/app/projects/[id]/assets` |
 | Live preview (e-book / blog / print) | `/app/projects/[id]/preview` |
 | Export (MD, DOCX, EPUB, PDF print/screen, HTML, JSON) | `/app/projects/[id]/export` |
 | Collaborators, history, webhooks | `/app/projects/[id]/settings` |
@@ -66,8 +67,14 @@ and plan quotas are skipped in server actions and the billing screen.
 - **Service role** is only used for API-key authenticated routes, export storage, and webhook delivery.
 - **Content model**: `chapters.content` (TipTap JSON) with `chapters.content_md` mirror; Postgres
   triggers keep `word_count` and an auto version snapshot (< every 10 minutes).
-- **Exports** are generated server-side (`pdf-lib`, `docx`, `jszip`, `turndown`), stored in the
-  Supabase `exports` bucket, tracked in `export_jobs`.
+- **Exports** are generated server-side (`pdf-lib`, `docx`, `jszip`), stored in the Supabase
+  `exports` bucket, tracked in `export_jobs`.
+- **Cover art** is a layer document (`projects.cover_front` / `cover_back`, see `lib/cover-art.ts`)
+  rendered in the browser at 2× to PNG (`cover_front_url` / `cover_back_url`). EPUB, print/screen
+  PDF, DOCX, HTML and JSON all embed the rendered front (and back, where the format has one).
+- **Theme**: `html.light` inverts the `ink-*` ramp instead of remapping components, so every
+  surface/text pair written against the tokens keeps its contrast. Paper surfaces (editor, storyboard
+  captions, preview) pin the ramp back so they stay dark-on-cream in both themes.
 - **Realtime** uses Supabase channels: Yjs updates for the editor, presence for collaborator avatars.
 - **Webhooks** are signed (`X-Inkwell-Signature: sha256=<hmac>`) with retries and delivery logs.
 

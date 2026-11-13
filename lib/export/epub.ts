@@ -68,6 +68,17 @@ ${bodyHtml || "<p class=\"ink-empty\"><em>This chapter is empty.</em></p>"}
   return xhtmlDoc({ title: chapter.title, language: doc.language, body, bodyClass: "ink-page" });
 }
 
+function backCoverXhtml(doc: ExportDocument, cover: FetchedImage | undefined, href: string | null): string {
+  if (!href || !cover) return "";
+  return xhtmlDoc({
+    title: "Back cover",
+    language: doc.language,
+    bodyAttrs: 'epub:type="backmatter"',
+    bodyClass: "ink-cover-page",
+    body: `<div class="ink-cover"><img src="${escapeAttr(href)}" alt="${escapeAttr(xmlSafe(doc.title))} back cover" /></div>`,
+  });
+}
+
 function coverXhtml(doc: ExportDocument, cover: FetchedImage | undefined, coverHref: string | null): string {
   if (coverHref && cover) {
     return xhtmlDoc({
@@ -190,6 +201,9 @@ export async function generateEpub(doc: ExportDocument, images: ImageMap): Promi
 
   const coverHref = doc.options.includeCover && doc.coverUrl ? addImage(doc.coverUrl, "cover") : null;
   const coverEntry = coverHref ? imageEntries.find((entry) => entry.href === coverHref) : undefined;
+  const backHref =
+    doc.options.includeCover && doc.backCoverUrl ? addImage(doc.backCoverUrl, "back-cover") : null;
+  const backEntry = backHref ? imageEntries.find((entry) => entry.href === backHref) : undefined;
   for (const chapter of doc.chapters) {
     const nodes = parseHtml(chapter.html);
     const walk = (list: HtmlNode[]) => {
@@ -210,12 +224,18 @@ export async function generateEpub(doc: ExportDocument, images: ImageMap): Promi
   zip.file("OEBPS/nav.xhtml", navXhtml(doc, chapterHrefs));
   zip.file("OEBPS/styles.css", epubCss(style, doc.options.dropCaps));
   zip.file("OEBPS/cover.xhtml", coverXhtml(doc, coverEntry?.image, coverHref));
+  if (backHref) {
+    zip.file("OEBPS/back-cover.xhtml", backCoverXhtml(doc, backEntry?.image, backHref));
+  }
 
   const manifest: string[] = [
     `    <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav" />`,
     `    <item id="css" href="styles.css" media-type="text/css" />`,
     `    <item id="cover" href="cover.xhtml" media-type="application/xhtml+xml" />`,
   ];
+  if (backHref) {
+    manifest.push(`    <item id="back-cover" href="back-cover.xhtml" media-type="application/xhtml+xml" />`);
+  }
   for (const image of imageEntries) {
     const isCover = coverHref !== null && image.href === coverHref;
     manifest.push(
@@ -231,6 +251,7 @@ export async function generateEpub(doc: ExportDocument, images: ImageMap): Promi
     manifest.push(`    <item id="${id}" href="${chapterHrefs[i]}" media-type="application/xhtml+xml" />`);
     spine.push(id);
   });
+  if (backHref) spine.push("back-cover");
 
   zip.file("OEBPS/content.opf", opf(doc, manifest, spine));
   zip.file("META-INF/container.xml", CONTAINER);

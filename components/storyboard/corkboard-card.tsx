@@ -45,7 +45,7 @@ export function CorkboardCard({
       }}
       aria-roledescription="Corkboard card"
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-md border border-border-strong border-l-[3px] bg-paper p-4 text-ink-900 shadow-[0_18px_36px_-30px_rgba(0,0,0,0.9)] transition-shadow",
+        "group relative flex flex-col overflow-hidden rounded-md border border-border-strong border-l-[3px] bg-paper p-4 text-paper-ink shadow-[0_18px_36px_-30px_rgba(0,0,0,0.9)] transition-shadow",
         isDragging
           ? "z-30 opacity-75 shadow-[0_28px_60px_-24px_rgba(0,0,0,0.85)]"
           : "hover:shadow-[0_24px_44px_-28px_rgba(0,0,0,0.95)]",
@@ -82,7 +82,7 @@ export function CorkboardCard({
           <div className="min-w-0 flex-1">
             <Link
               href={card.href}
-              className="line-clamp-2 font-serif text-[19px] font-semibold leading-[1.22] tracking-[-0.01em] text-ink-950 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-deep/40"
+              className="line-clamp-2 font-serif text-[19px] font-semibold leading-[1.22] tracking-[-0.01em] text-paper-ink underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-deep/40"
             >
               {card.title}
             </Link>

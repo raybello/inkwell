@@ -320,20 +320,20 @@ export function PreviewWorkbench({ project, chapters, initialChapterId }: Props)
               This project has no chapters to preview yet.
             </div>
           ) : mode === "ebook" ? (
-            <div className="rounded-xl border border-border bg-[#f7f2e8] px-4 py-10 text-ink-900 shadow-[0_28px_70px_-40px_rgba(0,0,0,0.7)] md:px-10 md:py-16">
+            <div className="rounded-xl border border-border bg-paper px-4 py-10 text-paper-ink shadow-[0_28px_70px_-40px_rgba(0,0,0,0.7)] md:px-10 md:py-16">
               {isWholeBook && (
                 <header className="mb-14 text-center">
                   {project.coverUrl && (
                     <img src={project.coverUrl} alt="" className="pv-hero-cover mx-auto mb-8 max-h-72 w-auto" />
                   )}
                   {project.subtitle && <p className="mb-3 text-[11px] uppercase tracking-[0.28em] text-ink-500">{project.subtitle}</p>}
-                  <h2 className="font-serif text-4xl leading-tight text-ink-900">{project.title}</h2>
+                  <h2 className="font-serif text-4xl leading-tight text-paper-ink">{project.title}</h2>
                   {project.author && <p className="mt-4 text-[11px] uppercase tracking-[0.22em] text-ink-500">{project.author}</p>}
                 </header>
               )}
               {visible.map((chapter, index) => (
                 <React.Fragment key={chapter.id}>
-                  {showBreak(index) && <div className="pv-break text-ink-900">Page break</div>}
+                  {showBreak(index) && <div className="pv-break text-paper-ink">Page break</div>}
                   <article className="mx-auto" style={{ maxWidth: "var(--pv-measure)" }}>
                     <header className="pv-opener">
                       {openerLabel(chapter.title, chapters.indexOf(chapter)) && (

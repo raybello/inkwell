@@ -1,18 +1,7 @@
-import { getProjectContext } from "@/lib/data";
-import { CoverStudio } from "@/components/cover/cover-studio";
+import { redirect } from "next/navigation";
 
-export default async function CoverStudioPage({ params }: { params: Promise<{ id: string }> }) {
+/** The standalone cover studio moved to the project-level Cover tab. */
+export default async function LegacyCoverStudio({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { project, profile, canEdit } = await getProjectContext(id);
-
-  return (
-    <CoverStudio
-      projectId={id}
-      projectTitle={project.title}
-      projectSubtitle={project.subtitle}
-      authorName={profile?.display_name ?? null}
-      coverUrl={project.cover_image_url}
-      canEdit={canEdit}
-    />
-  );
+  redirect(`/app/projects/${id}/cover`);
 }

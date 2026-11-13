@@ -52,7 +52,7 @@ export function NewProjectWizard({ plan }: { plan: string }) {
                 className={cn(
                   "flex size-5 items-center justify-center rounded-full border text-[10px]",
                   i === step
-                    ? "border-accent bg-accent text-ink-950"
+                    ? "border-accent bg-accent text-on-accent"
                     : i < step
                       ? "border-accent/40 bg-accent/15 text-accent"
                       : "border-border-strong text-muted",

@@ -15,6 +15,7 @@ All five phases from `Phase.md` have working surfaces in this repo.
 | Assets | 5 SVG assets uploaded to Supabase Storage, listed with tags/size |
 | Export | EPUB 3 (valid zip: mimetype, container, OPF, nav, 5 XHTML chapters), PDF print (pdf-lib: 8 pages at 432×648 pt = 6×9 in), Markdown — all generated, stored and downloadable |
 | Public share | `/share/<token>` renders the read-only reader for `is_public` projects |
+| Cover art | front/back layer editor renders 3200×4800 PNGs; EPUB export contains `cover.xhtml` + `back-cover.xhtml` with `properties="cover-image"`, PDF is 10 pages with the cover first and the back cover last (rendered pages checked) |
 | Agent API | key auth (401 invalid/missing), `GET/POST projects`, `GET/POST/PATCH/DELETE chapters`, `append`, `storyboard`, `export` + poll to `done`, `ai/generate` offline fallback, `X-RateLimit-*` + `X-Request-Id` headers |
 | Notifications | list/mark-read works; probe rows cleaned |
 

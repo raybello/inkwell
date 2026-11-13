@@ -54,6 +54,11 @@ function chapterHtml(doc: ExportDocument, index: number, chapterId: string, titl
 export function generateHtml(doc: ExportDocument): Uint8Array {
   const style = resolveStyle(doc.style);
   const coverSrc = doc.options.includeCover && doc.coverUrl ? absoluteImageUrl(doc.coverUrl) : null;
+  const backCoverSrc =
+    doc.options.includeCover && doc.backCoverUrl ? absoluteImageUrl(doc.backCoverUrl) : null;
+  const backCover = backCoverSrc
+    ? `<figure class="ink-back-cover"><img src="${escapeAttr(backCoverSrc)}" alt="${escapeAttr(`${doc.title} back cover`)}" /></figure>`
+    : "";
 
   const hero = `<header class="ink-hero">
 ${coverSrc ? `<figure class="ink-cover"><img src="${escapeAttr(coverSrc)}" alt="${escapeAttr(`${doc.title} cover`)}" /></figure>` : ""}
@@ -95,6 +100,8 @@ ${styleCss(style, { dropCaps: doc.options.dropCaps })}
 .ink-toc { max-width: var(--measure); padding: 1rem 1.25rem 2.5rem; }
 .ink-chapter { max-width: var(--measure); margin: 0 auto; padding: 0 1.25rem 4.5rem; }
 .ink-empty { color: var(--muted); }
+.ink-back-cover { max-width: var(--measure); margin: 0 auto 3rem; padding: 0 1.25rem; }
+.ink-back-cover img { display: block; width: 100%; height: auto; box-shadow: 0 24px 60px -30px rgba(0,0,0,0.5); }
 .ink-colophon { max-width: var(--measure); margin: 0 auto; padding: 3rem 1.25rem 5rem; border-top: 1px solid var(--rule); color: var(--muted); font-family: var(--label-font); font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase; text-align: center; }
 @media (max-width: 640px) { .ink-hero { padding-top: 2.5rem; } .ink-chapter { padding-bottom: 3rem; } }
   </style>
@@ -104,6 +111,7 @@ ${styleCss(style, { dropCaps: doc.options.dropCaps })}
     ${hero}
     ${tocHtml(doc)}
     ${chapters}
+    ${backCover}
   </main>
   <footer class="ink-colophon">${escapeHtml(doc.title)}${doc.author ? ` · ${escapeHtml(doc.author)}` : ""} · Made with Inkwell Studio</footer>
 </body>

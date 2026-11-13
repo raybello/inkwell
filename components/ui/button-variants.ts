@@ -6,7 +6,7 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-accent text-ink-950 shadow-[0_1px_0_rgba(255,255,255,0.15)_inset] hover:bg-accent-soft active:translate-y-px",
+          "bg-accent text-on-accent shadow-[0_1px_0_rgba(255,255,255,0.14)_inset] hover:opacity-90 active:translate-y-px",
         secondary:
           "bg-ink-800 text-ink-100 border border-border-strong hover:bg-ink-750 hover:border-ink-600",
         ghost: "text-muted-strong hover:bg-ink-800 hover:text-foreground",

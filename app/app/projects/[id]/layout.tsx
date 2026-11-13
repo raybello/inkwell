@@ -29,7 +29,6 @@ export default async function ProjectLayout({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h1 className="truncate font-serif text-[15px] font-semibold leading-tight">{project.title}</h1>
-              <Badge className="hidden sm:inline-flex">{project.type}</Badge>
               {role !== "owner" && <Badge tone="plum">{role}</Badge>}
             </div>
             <p className="text-[11px] text-muted">

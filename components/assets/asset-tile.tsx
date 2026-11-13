@@ -263,7 +263,7 @@ export function AssetTile({
 
         <div className="pointer-events-none absolute left-1.5 top-1.5 flex items-center gap-1">
           {isCover && (
-            <span className="inline-flex items-center gap-1 rounded bg-accent/90 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-ink-950">
+            <span className="inline-flex items-center gap-1 rounded bg-accent px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-on-accent">
               <Star className="size-2.5" /> Cover
             </span>
           )}

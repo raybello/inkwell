@@ -30,6 +30,7 @@ export async function generateExport(input: GenerateExportInput): Promise<Genera
   if (NEEDS_IMAGE_BYTES.includes(format)) {
     const urls: string[] = [];
     if (doc.options.includeCover && doc.coverUrl) urls.push(doc.coverUrl);
+    if (doc.options.includeCover && doc.backCoverUrl) urls.push(doc.backCoverUrl);
     for (const chapter of doc.chapters) urls.push(...collectImageSources(chapter.html));
     images = await fetchImages(urls);
   }

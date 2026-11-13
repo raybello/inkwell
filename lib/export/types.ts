@@ -71,6 +71,8 @@ export interface ExportDocument {
   genre: string | null;
   language: string;
   coverUrl: string | null;
+  /** Rendered back cover PNG, embedded at the end where the format allows. */
+  backCoverUrl: string | null;
   chapters: ExportChapter[];
   assets: ExportAsset[];
   notes: ExportNote[];

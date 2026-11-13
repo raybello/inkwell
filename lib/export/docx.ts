@@ -341,6 +341,31 @@ export async function generateDocx(doc: ExportDocument, images: ImageMap): Promi
     children.push(new Paragraph({ children: [], spacing: { line: LINE } }));
   });
 
+  if (doc.options.includeCover && doc.backCoverUrl) {
+    const back = images.get(doc.backCoverUrl);
+    if (back && back.ext !== "svg" && back.ext !== "webp") {
+      const scale = Math.min(1, (5.5 * 96) / (back.width ?? 400));
+      children.push(new Paragraph({ children: [], pageBreakBefore: true }));
+      children.push(
+        new Paragraph({
+          children: [
+            new ImageRun({
+              type: back.ext,
+              data: back.bytes,
+              transformation: {
+                width: Math.round((back.width ?? 400) * scale),
+                height: Math.round((back.height ?? 600) * scale),
+              },
+              altText: { title: "Back cover", description: doc.title, name: "back-cover" },
+            }),
+          ],
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 600 },
+        }),
+      );
+    }
+  }
+
   const headerText = doc.author ? `${doc.author} / ${doc.title}` : doc.title;
 
   const document = new Document({

@@ -317,7 +317,7 @@ export function ExportWorkbench({ projectId, projectTitle, hasCover, chapters, i
                       active ? "border-accent/60 bg-accent/[0.06]" : "border-border bg-card hover:border-border-strong",
                     )}
                   >
-                    <span className="flex h-16 flex-col justify-center gap-1 rounded-md border border-border bg-paper px-3 text-ink-900">
+                    <span className="flex h-16 flex-col justify-center gap-1 rounded-md border border-border bg-paper px-3 text-paper-ink">
                       <span className={cn("truncate text-[13px] leading-tight", item.sampleClass)}>{item.sample}</span>
                       <span className="flex flex-col gap-[3px]" aria-hidden="true">
                         <span className="h-px w-full bg-ink-900/25" />

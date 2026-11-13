@@ -1092,7 +1092,35 @@ export async function generatePdf(doc: ExportDocument, images: ImageMap, mode: "
   const front = await layoutFront(frontFlow, doc, images, pdf, imageCache, chapterStarts, mode === "screen");
   const frontPages = front.cover + front.title + front.toc;
 
-  const allPages = [...frontFlow.pages, ...bodyFlow.pages];
+  // Back cover: its own page at the very end, no header/footer.
+  const backFlow = new Flow({ page: pageSize, margins, style, measure });
+  const backSource = doc.options.includeCover ? doc.backCoverUrl : null;
+  const backBytes = backSource ? images.get(backSource) : undefined;
+  if (backBytes) {
+    backFlow.newPage({ showHeader: false, showFooter: false, isBody: false });
+    let image = imageCache.get(backSource ?? "") ?? null;
+    if (!imageCache.has(backSource ?? "")) {
+      image = await embedImage(pdf, backBytes);
+      imageCache.set(backSource ?? "", image);
+    }
+    if (image) {
+      const maxW = pageSize.width - margins.left * 2;
+      const maxH = pageSize.height - margins.top * 3;
+      const scale = Math.min(maxW / image.width, maxH / image.height);
+      const w = image.width * scale;
+      const h = image.height * scale;
+      backFlow.add({
+        kind: "image",
+        x: (pageSize.width - w) / 2,
+        y: (pageSize.height - h) / 2,
+        width: w,
+        height: h,
+        image,
+      });
+    }
+  }
+
+  const allPages = [...frontFlow.pages, ...bodyFlow.pages, ...backFlow.pages];
   renderPages(pdf, allPages, fonts, style, doc, pageSize, margins, {
     internalLinks: mode === "screen",
     frontOffset: frontPages,
