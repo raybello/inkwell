@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { AlignCenter, AlignLeft, AlignRight, Image as ImageIcon, Trash2, Type } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, Image as ImageIcon, Trash2, Type, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
@@ -111,22 +111,28 @@ function Slider({
 export function CoverInspector({
   sideDoc,
   selected,
+  selectedId,
   onPatchLayer,
   onPatchBackground,
   onDelete,
   onDuplicate,
   onMoveLayerOrder,
   onUseBackground,
+  onSelectLayer,
+  onUploadImage,
   className,
 }: {
   sideDoc: CoverSideDoc;
   selected: CoverLayer | null;
+  selectedId: string | null;
   onPatchLayer: (patch: Partial<CoverLayer>) => void;
   onPatchBackground: (patch: Partial<CoverSideDoc["background"]>) => void;
   onDelete: () => void;
   onDuplicate: () => void;
   onMoveLayerOrder: (direction: "up" | "down") => void;
   onUseBackground: (url: string | null) => void;
+  onSelectLayer: (id: string) => void;
+  onUploadImage?: (file: File) => void;
   className?: string;
 }) {
   return (
@@ -143,6 +149,42 @@ export function CoverInspector({
           </div>
         )}
       </div>
+
+      {sideDoc.layers.length > 0 && (
+        <div className="max-h-40 shrink-0 space-y-0.5 overflow-y-auto border-b border-border p-2">
+          {[...sideDoc.layers].reverse().map((layer, index) => {
+            const active = layer.id === selectedId;
+            const label =
+              layer.type === "text"
+                ? layer.text.split("\n")[0].slice(0, 22) || "Text"
+                : layer.type === "image"
+                  ? "Image"
+                  : layer.shape === "line"
+                    ? "Rule"
+                    : "Box";
+            return (
+              <button
+                key={layer.id}
+                type="button"
+                onClick={() => onSelectLayer(layer.id)}
+                className={cn(
+                  "flex w-full items-center gap-1.5 rounded px-1.5 py-1 text-left text-[11px] transition",
+                  active ? "bg-ink-750 text-foreground" : "text-muted hover:bg-ink-800 hover:text-muted-strong",
+                )}
+                title={`Layer ${sideDoc.layers.length - index} of ${sideDoc.layers.length}`}
+              >
+                {layer.type === "image" ? (
+                  <ImageIcon className="size-3 shrink-0" />
+                ) : (
+                  <Type className="size-3 shrink-0" />
+                )}
+                <span className="min-w-0 flex-1 truncate">{label}</span>
+                <span className="font-mono text-[9px] text-muted/70">{sideDoc.layers.length - index}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-3 py-3">
         {!selected ? (
@@ -358,6 +400,21 @@ export function CoverInspector({
             <Button variant="secondary" size="sm" onClick={() => onUseBackground(selected.url)}>
               <ImageIcon /> Use as page background
             </Button>
+            {onUploadImage && (
+              <label className="flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-md border border-border-strong bg-ink-800 text-[12px] text-muted-strong transition hover:bg-ink-750 hover:text-foreground">
+                <Upload className="size-3.5" /> Replace image
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) onUploadImage(file);
+                    event.currentTarget.value = "";
+                  }}
+                />
+              </label>
+            )}
           </>
         ) : (
           <>
@@ -403,6 +460,22 @@ export function CoverInspector({
         {selected && (
           <>
             <div className="h-px bg-border" />
+            <Slider
+              label="Rotation"
+              value={Math.round(selected.rotation ?? 0)}
+              min={-180}
+              max={180}
+              suffix="°"
+              onChange={(rotation) => onPatchLayer({ rotation } as Partial<CoverLayer>)}
+            />
+            <Slider
+              label="Scale"
+              value={Math.round((selected.scale ?? 1) * 100)}
+              min={10}
+              max={300}
+              suffix="%"
+              onChange={(value) => onPatchLayer({ scale: value / 100 } as Partial<CoverLayer>)}
+            />
             <Slider
               label="Width"
               value={Math.round(selected.width * 100)}

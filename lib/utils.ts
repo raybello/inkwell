@@ -5,6 +5,26 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Client-safe unique id.
+ *
+ * `crypto.randomUUID` only exists in a secure context (https or localhost), so
+ * opening the app over a LAN address (http://192.168.x.x:3000) throws
+ * "crypto.randomUUID is not a function". getRandomValues is available
+ * everywhere; Math.random is the last resort.
+ */
+export function newId(prefix = "id"): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    return `${prefix}-${hex}`;
+  }
+  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export function formatDate(value: string | Date | null | undefined) {
   if (!value) return "—";
   const d = typeof value === "string" ? new Date(value) : value;

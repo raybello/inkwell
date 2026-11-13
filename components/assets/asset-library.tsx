@@ -22,7 +22,7 @@ import { AssetTile } from "@/components/assets/asset-tile";
 import { AssetsTabs } from "@/components/assets/assets-tabs";
 import { deleteAssetAction, updateAssetAction } from "@/lib/actions/assets";
 import { setCoverFromAssetAction } from "@/lib/actions/cover";
-import { cn, formatNumber } from "@/lib/utils";
+import { cn, formatNumber, newId } from "@/lib/utils";
 import type { Asset } from "@/lib/types";
 import {
   MAX_UPLOAD_BYTES,
@@ -140,7 +140,7 @@ export function AssetLibrary({
       }
 
       for (const file of accepted) {
-        const id = crypto.randomUUID();
+        const id = newId("upload");
         const isImage = assetKind({ mime_type: file.type, filename: file.name }) === "image";
         const preview = isImage ? URL.createObjectURL(file) : null;
         setPending((prev) => [{ id, name: file.name, preview, size: file.size, progress: 0 }, ...prev]);

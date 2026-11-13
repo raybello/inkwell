@@ -7,6 +7,9 @@ import {
   drawCoverSide,
   ensureCoverFonts,
   fontStack,
+  coverImageUrls,
+  peekImage,
+  pointInLayer,
   preloadSideImages,
   wrapText,
   type CoverLayer,
@@ -25,7 +28,8 @@ interface Rect {
 
 /**
  * Canvas cover preview/editor. Drawing and hit-testing share the same renderer
- * as the PNG export, so the pointer never lies about where a layer sits.
+ * as the PNG export, so the pointer never lies about where a layer sits —
+ * including rotated layers.
  */
 export function CoverCanvas({
   sideDoc,
@@ -34,6 +38,7 @@ export function CoverCanvas({
   onMove,
   onCommit,
   onRequestEdit,
+  onDropFiles,
   readOnly,
   className,
   zoom = 1,
@@ -44,6 +49,7 @@ export function CoverCanvas({
   onMove: (id: string, x: number, y: number) => void;
   onCommit: () => void;
   onRequestEdit?: (id: string) => void;
+  onDropFiles?: (files: File[], point: { x: number; y: number }) => void;
   readOnly?: boolean;
   className?: string;
   zoom?: number;
@@ -55,6 +61,10 @@ export function CoverCanvas({
   const [displayWidth, setDisplayWidth] = React.useState(560);
   const [ready, setReady] = React.useState(false);
   const [paintError, setPaintError] = React.useState<string | null>(null);
+  const [dragOver, setDragOver] = React.useState(false);
+  const [tick, setTick] = React.useState(0);
+  const genRef = React.useRef(0);
+  const retryRef = React.useRef(0);
 
   // Responsive canvas width, capped by the available height so a 2:3 book fits.
   React.useEffect(() => {
@@ -79,6 +89,7 @@ export function CoverCanvas({
   const paint = React.useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const gen = ++genRef.current;
     const scale = displayWidth / COVER_WIDTH;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     canvas.width = Math.round(COVER_WIDTH * scale * dpr);
@@ -97,11 +108,22 @@ export function CoverCanvas({
     }
 
     const s = scale * dpr;
+    if (gen !== genRef.current) return;
     try {
       await drawCoverSide(ctx, sideDoc, { scale: s });
+      if (gen !== genRef.current) return;
       setPaintError(null);
     } catch (error) {
       setPaintError(error instanceof Error ? error.message : "The cover could not be drawn.");
+    }
+
+    // An image that has not decoded yet leaves a gap; repaint shortly after.
+    const pending = coverImageUrls(sideDoc).filter((url) => !peekImage(url));
+    if (pending.length > 0 && retryRef.current < 6) {
+      retryRef.current += 1;
+      window.setTimeout(() => setTick((value) => value + 1), 500);
+    } else if (pending.length === 0) {
+      retryRef.current = 0;
     }
 
     // Measurement pass for text blocks (used by hit-testing and outlines).
@@ -109,9 +131,15 @@ export function CoverCanvas({
     for (const layer of sideDoc.layers) {
       let height = layer.type === "text" ? 0.04 : layer.height;
       if (layer.type === "text") {
-        ctx.font = `${layer.italic ? "italic " : ""}${layer.weight} ${layer.size * s}px ${fontStack(layer.font)}`;
-        (ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = `${layer.letterSpacing * s}px`;
-        const { height: textHeight } = wrapText(ctx, layer as TextLayer, layer.width * COVER_WIDTH * s, s);
+        const scalar = layer.scale ?? 1;
+        ctx.font = `${layer.italic ? "italic " : ""}${layer.weight} ${layer.size * s * scalar}px ${fontStack(layer.font)}`;
+        (ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = `${layer.letterSpacing * s * scalar}px`;
+        const { height: textHeight } = wrapText(
+          ctx,
+          { ...layer, size: layer.size * scalar },
+          layer.width * COVER_WIDTH * s * scalar,
+          s,
+        );
         height = textHeight / (COVER_HEIGHT * s);
       }
       rects.push({ id: layer.id, x: layer.x, y: layer.y, width: layer.width, height: Math.max(0.003, height) });
@@ -119,77 +147,95 @@ export function CoverCanvas({
     rectsRef.current = rects;
 
     const selected = sideDoc.layers.find((l) => l.id === selectedId);
-    if (selected) {
-      const rect = rects.find((r) => r.id === selected.id);
-      if (rect) {
-        const x = rect.x * COVER_WIDTH * s;
-        const y = rect.y * COVER_HEIGHT * s;
-        const w = rect.width * COVER_WIDTH * s;
-        const h = rect.height * COVER_HEIGHT * s;
-        ctx.save();
-        ctx.strokeStyle = "#c8814a";
-        ctx.lineWidth = 2 * dpr;
-        ctx.setLineDash([6 * dpr, 4 * dpr]);
-        ctx.strokeRect(x - 2 * dpr, y - 2 * dpr, w + 4 * dpr, h + 4 * dpr);
-        ctx.setLineDash([]);
-        ctx.fillStyle = "#c8814a";
-        for (const [hx, hy] of [
-          [x, y],
-          [x + w, y],
-          [x, y + h],
-          [x + w, y + h],
-        ]) {
-          ctx.fillRect(hx - 3.5 * dpr, hy - 3.5 * dpr, 7 * dpr, 7 * dpr);
-        }
-        ctx.restore();
+    const rect = selected ? rects.find((r) => r.id === selected.id) : undefined;
+    if (selected && rect) {
+      const scalar = selected.scale ?? 1;
+      const w = rect.width * COVER_WIDTH * s * scalar;
+      const h = rect.height * COVER_HEIGHT * s * scalar;
+      const cx = (rect.x + rect.width / 2) * COVER_WIDTH * s;
+      const cy = (rect.y + rect.height / 2) * COVER_HEIGHT * s;
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(((selected.rotation ?? 0) * Math.PI) / 180);
+      ctx.strokeStyle = "#c8814a";
+      ctx.lineWidth = 2 * dpr;
+      ctx.setLineDash([6 * dpr, 4 * dpr]);
+      ctx.strokeRect(-w / 2 - 2 * dpr, -h / 2 - 2 * dpr, w + 4 * dpr, h + 4 * dpr);
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#c8814a";
+      for (const [hx, hy] of [
+        [-w / 2, -h / 2],
+        [w / 2, -h / 2],
+        [-w / 2, h / 2],
+        [w / 2, h / 2],
+      ]) {
+        ctx.fillRect(hx - 3.5 * dpr, hy - 3.5 * dpr, 7 * dpr, 7 * dpr);
       }
+      ctx.restore();
     }
     setReady(true);
-  }, [sideDoc, selectedId, displayWidth]);
+  }, [sideDoc, selectedId, displayWidth, tick]);
 
   React.useEffect(() => {
     setReady(false);
     void paint();
   }, [paint]);
 
-  const toNormalised = React.useCallback(
-    (event: React.PointerEvent<HTMLCanvasElement>) => {
-      const canvas = canvasRef.current;
-      if (!canvas) return { x: 0, y: 0 };
-      const rect = canvas.getBoundingClientRect();
-      return {
-        x: (event.clientX - rect.left) / rect.width,
-        y: (event.clientY - rect.top) / rect.height,
-      };
-    },
-    [],
-  );
+  const toNormalised = React.useCallback((clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left) / rect.width,
+      y: (clientY - rect.top) / rect.height,
+    };
+  }, []);
 
-  const hit = React.useCallback((x: number, y: number): CoverLayer | null => {
-    for (let i = sideDoc.layers.length - 1; i >= 0; i -= 1) {
-      const layer = sideDoc.layers[i];
-      const rect = rectsRef.current.find((r) => r.id === layer.id);
-      if (!rect) continue;
-      if (x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height) {
-        return layer;
+  const hit = React.useCallback(
+    (x: number, y: number): CoverLayer | null => {
+      for (let i = sideDoc.layers.length - 1; i >= 0; i -= 1) {
+        const layer = sideDoc.layers[i];
+        const rect = rectsRef.current.find((r) => r.id === layer.id);
+        if (!rect) continue;
+        if (pointInLayer(layer, rect.height, x, y)) return layer;
       }
-    }
-    return null;
-  }, [sideDoc.layers]);
+      return null;
+    },
+    [sideDoc.layers],
+  );
 
   return (
     <div ref={wrapRef} className={cn("flex w-full flex-col items-center", className)}>
-      <div className="relative">
+      <div
+        className="relative"
+        onDragOver={(event) => {
+          if (!onDropFiles || readOnly) return;
+          event.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(event) => {
+          setDragOver(false);
+          if (!onDropFiles || readOnly) return;
+          const files = Array.from(event.dataTransfer.files ?? []).filter((file) =>
+            file.type.startsWith("image/"),
+          );
+          if (!files.length) return;
+          event.preventDefault();
+          onDropFiles(files, toNormalised(event.clientX, event.clientY));
+        }}
+      >
         <canvas
           ref={canvasRef}
           className={cn(
-            "touch-none rounded-[3px] shadow-[0_30px_70px_-30px_rgba(0,0,0,0.95)] ring-1 ring-black/30",
+            "touch-none rounded-[3px] shadow-[0_30px_70px_-30px_rgba(0,0,0,0.75)] ring-1 ring-black/20",
             readOnly ? "cursor-default" : "cursor-move",
           )}
           aria-label="Cover preview"
           onPointerDown={(event) => {
             if (readOnly) return;
-            const { x, y } = toNormalised(event);
+            const { x, y } = toNormalised(event.clientX, event.clientY);
             const layer = hit(x, y);
             onSelect(layer?.id ?? null);
             if (!layer) return;
@@ -205,7 +251,7 @@ export function CoverCanvas({
           onPointerMove={(event) => {
             const drag = dragRef.current;
             if (!drag || readOnly) return;
-            const { x, y } = toNormalised(event);
+            const { x, y } = toNormalised(event.clientX, event.clientY);
             const layer = sideDoc.layers.find((l) => l.id === drag.id);
             if (!layer) return;
             const nextX = Math.min(1 - Math.min(layer.width, 0.98), Math.max(0, drag.originX + (x - drag.startX)));
@@ -222,14 +268,22 @@ export function CoverCanvas({
           }}
           onDoubleClick={(event) => {
             if (readOnly || !onRequestEdit) return;
-            const { x, y } = toNormalised(event as unknown as React.PointerEvent<HTMLCanvasElement>);
+            const { x, y } = toNormalised(event.clientX, event.clientY);
             const layer = hit(x, y);
             if (layer) onRequestEdit(layer.id);
           }}
         />
+
         {!ready && (
           <div className="absolute inset-0 flex items-center justify-center rounded-[3px] bg-ink-900/70">
             <span className="text-[10px] uppercase tracking-[0.2em] text-muted">Rendering</span>
+          </div>
+        )}
+        {dragOver && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-[3px] border-2 border-dashed border-accent bg-accent/10">
+            <span className="rounded-md bg-ink-900/90 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-accent">
+              Drop image
+            </span>
           </div>
         )}
         {paintError && (

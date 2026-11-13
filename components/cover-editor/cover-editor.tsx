@@ -28,6 +28,9 @@ import {
   newImageLayer,
   newShapeLayer,
   newTextLayer,
+  COVER_HEIGHT,
+  COVER_WIDTH,
+  loadImage,
   normaliseCoverDoc,
   renderCoverSide,
   type CoverDoc,
@@ -81,6 +84,8 @@ export function CoverEditor({
   const [doc, setDoc] = React.useState<CoverDoc>(() =>
     normaliseCoverDoc({ front: project.coverFront, back: project.coverBack }, defaults),
   );
+  const [library, setLibrary] = React.useState<CoverAsset[]>(assets);
+  const [uploading, setUploading] = React.useState(false);
   const [side, setSide] = React.useState<CoverSide>("front");
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [trayOpen, setTrayOpen] = React.useState(false);
@@ -192,17 +197,90 @@ export function CoverEditor({
     setSelectedId(layer.id);
   };
 
-  const addImage = (url: string, asBackground = false) => {
-    if (asBackground) {
+  const addImage = async (
+    url: string,
+    options: { asBackground?: boolean; point?: { x: number; y: number }; replaceId?: string } = {},
+  ) => {
+    if (options.asBackground) {
       updateSide((current) => ({
         ...current,
         background: { ...current.background, kind: "image", imageUrl: url },
       }));
       return;
     }
-    const layer = newImageLayer(url, { y: Math.min(0.6, 0.15 + sideDoc.layers.length * 0.04) });
+
+    // Keep the art's own aspect ratio so logos and ornaments aren't squashed.
+    const img = await loadImage(url);
+    const ratio = img && img.naturalWidth > 0 ? img.naturalHeight / img.naturalWidth : 1.25;
+    const width = options.point ? 0.5 : 0.55;
+    const height = Math.min(
+      0.9,
+      ((width * COVER_WIDTH) / COVER_HEIGHT) * ratio,
+    );
+    const point = options.point ?? { x: 0.5, y: 0.35 };
+    const x = Math.min(1 - width, Math.max(0, point.x - width / 2));
+    const y = Math.min(1 - height, Math.max(0, point.y - height / 2));
+
+    if (options.replaceId) {
+      updateSide((current) => ({
+        ...current,
+        layers: current.layers.map((layer) =>
+          layer.id === options.replaceId && layer.type === "image"
+            ? { ...layer, url, height }
+            : layer,
+        ),
+      }));
+      return;
+    }
+
+    const layer = newImageLayer(url, { x, y, width, height, fit: "contain" });
     updateSide((current) => ({ ...current, layers: [...current.layers, layer] }));
     setSelectedId(layer.id);
+  };
+
+  /**
+   * Uploads straight from the cover editor — no trip to Assets — then drops the
+   * image onto the page at the drop point (or centred).
+   */
+  const uploadImage = async (
+    file: File,
+    options: { asBackground?: boolean; point?: { x: number; y: number }; replaceId?: string } = {},
+  ) => {
+    if (!canEdit) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Only image files can be added to a cover.");
+      return;
+    }
+    if (file.size > 25 * 1024 * 1024) {
+      toast.error("Images must be 25 MB or smaller.");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("projectId", projectId);
+      form.append("file", file);
+      const response = await fetch("/api/assets", { method: "POST", body: form });
+      const payload = (await response.json().catch(() => ({}))) as {
+        asset?: { id: string; filename: string; public_url: string | null; mime_type: string | null };
+        error?: string;
+      };
+      if (!response.ok) throw new Error(payload.error ?? "Upload failed.");
+      const asset = payload.asset;
+      const publicUrl = asset?.public_url;
+      if (!asset || !publicUrl) throw new Error(payload.error ?? "The upload returned no file.");
+      setLibrary((current) => [
+        { id: asset.id, filename: asset.filename, url: publicUrl, mime: asset.mime_type },
+        ...current.filter((item) => item.id !== asset.id),
+      ]);
+      await addImage(publicUrl, options);
+      toast.success(`${file.name} added to the cover`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Upload failed.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const addShape = () => {
@@ -368,15 +446,29 @@ export function CoverEditor({
           </button>
           {trayOpen && (
             <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-2">
+              <label className="mb-1 flex h-7 cursor-pointer items-center justify-center gap-1.5 rounded border border-dashed border-border-strong text-[10px] text-muted transition hover:border-accent/60 hover:text-accent">
+                <ImagePlus className="size-3" /> Upload
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="sr-only"
+                  onChange={async (event) => {
+                    const files = Array.from(event.target.files ?? []);
+                    event.currentTarget.value = "";
+                    for (const file of files) await uploadImage(file);
+                  }}
+                />
+              </label>
               <p className="pb-1 text-[10px] leading-relaxed text-muted">
                 Click to place on the page, or set as background.
               </p>
-              {assets.length === 0 && (
+              {library.length === 0 && (
                 <p className="rounded border border-dashed border-border-strong px-2 py-4 text-center text-[10px] text-muted">
                   Upload images in Assets first.
                 </p>
               )}
-              {assets.map((asset) => (
+              {library.map((asset) => (
                 <div
                   key={asset.id}
                   className="group relative overflow-hidden rounded border border-border bg-ink-850"
@@ -386,7 +478,7 @@ export function CoverEditor({
                     src={asset.url}
                     alt={asset.filename}
                     className="h-24 w-full cursor-pointer object-cover transition group-hover:opacity-80"
-                    onClick={() => addImage(asset.url)}
+                    onClick={() => void addImage(asset.url)}
                     draggable={false}
                   />
                   <div className="flex items-center justify-between gap-1 border-t border-border px-1 py-0.5">
@@ -394,7 +486,7 @@ export function CoverEditor({
                     <button
                       type="button"
                       className="rounded p-0.5 text-[9px] text-muted hover:text-accent"
-                      onClick={() => addImage(asset.url, true)}
+                      onClick={() => void addImage(asset.url, { asBackground: true })}
                       title="Use as background"
                     >
                       BG
@@ -444,13 +536,34 @@ export function CoverEditor({
             >
               <Square className="size-3.5" /> Rule / box
             </button>
+            <label
+              className={cn(
+                "flex items-center gap-1 rounded px-2 py-1 text-[11px] text-muted-strong hover:bg-ink-800 hover:text-foreground",
+                (!canEdit || uploading) && "pointer-events-none opacity-40",
+              )}
+            >
+              {uploading ? <Loader2 className="size-3.5 animate-spin" /> : <ImagePlus className="size-3.5" />}
+              {uploading ? "Uploading…" : "Upload image"}
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="sr-only"
+                onChange={async (event) => {
+                  const files = Array.from(event.target.files ?? []);
+                  event.currentTarget.value = "";
+                  for (const file of files) await uploadImage(file);
+                }}
+              />
+            </label>
             <button
               type="button"
-              onClick={() => setTrayOpen(true)}
+              onClick={() => setTrayOpen((open) => !open)}
               disabled={!canEdit}
               className="flex items-center gap-1 rounded px-2 py-1 text-[11px] text-muted-strong hover:bg-ink-800 hover:text-foreground disabled:opacity-40"
+              title="Toggle the asset tray"
             >
-              <ImagePlus className="size-3.5" /> Image
+              Library
             </button>
 
             <div className="ml-auto flex items-center gap-2">
@@ -489,6 +602,15 @@ export function CoverEditor({
                 }
                 onCommit={scheduleSave}
                 onRequestEdit={(id) => setSelectedId(id)}
+                onDropFiles={(files, point) => {
+                  void (async () => {
+                    for (const [index, file] of files.entries()) {
+                      await uploadImage(file, {
+                        point: index === 0 ? point : { x: point.x + index * 0.04, y: point.y + index * 0.04 },
+                      });
+                    }
+                  })();
+                }}
                 readOnly={!canEdit}
               />
               <p className="mt-3 text-center text-[10px] uppercase tracking-[0.16em] text-muted/70">
@@ -502,6 +624,12 @@ export function CoverEditor({
         <CoverInspector
           sideDoc={sideDoc}
           selected={selected}
+          selectedId={selectedId}
+          onSelectLayer={setSelectedId}
+          onUploadImage={(file) => {
+            const target = selected?.type === "image" ? selected.id : undefined;
+            void uploadImage(file, { replaceId: target });
+          }}
           onPatchLayer={patchLayer}
           onPatchBackground={(patch) =>
             updateSide((current) => ({ ...current, background: { ...current.background, ...patch } }))
@@ -532,6 +660,12 @@ export function CoverEditor({
           <CoverInspector
             sideDoc={sideDoc}
             selected={selected}
+            selectedId={selectedId}
+            onSelectLayer={setSelectedId}
+            onUploadImage={(file) => {
+              const target = selected?.type === "image" ? selected.id : undefined;
+              void uploadImage(file, { replaceId: target });
+            }}
             onPatchLayer={patchLayer}
             onPatchBackground={(patch) =>
               updateSide((current) => ({ ...current, background: { ...current.background, ...patch } }))

@@ -89,6 +89,7 @@ export interface Asset {
   source: string;
   tags: string[];
   created_at: string;
+  updated_at?: string;
 }
 
 export interface StoryboardCard {

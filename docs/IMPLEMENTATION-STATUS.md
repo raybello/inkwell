@@ -15,6 +15,8 @@ All five phases from `Phase.md` have working surfaces in this repo.
 | Assets | 5 SVG assets uploaded to Supabase Storage, listed with tags/size |
 | Export | EPUB 3 (valid zip: mimetype, container, OPF, nav, 5 XHTML chapters), PDF print (pdf-lib: 8 pages at 432×648 pt = 6×9 in), Markdown — all generated, stored and downloadable |
 | Public share | `/share/<token>` renders the read-only reader for `is_public` projects |
+| Asset upload (LAN/HTTP) | uploading over `http://10.0.0.7:3000` (non-secure context) adds an asset — no `crypto.randomUUID` crash; `crypto.randomUUID` fallback in `lib/utils.ts` |
+| Cover images | upload from the cover toolbar, drop a file on the page, or pick from the asset tray (SVG included); image layers keep their aspect ratio, support rotation ±180°, scale 10–300%, opacity, PNG/SVG transparency, forward/backward z-order and replace-in-place; re-rendering deletes the superseded PNG so the library does not grow |
 | Cover art | front/back layer editor renders 3200×4800 PNGs; EPUB export contains `cover.xhtml` + `back-cover.xhtml` with `properties="cover-image"`, PDF is 10 pages with the cover first and the back cover last (rendered pages checked) |
 | Agent API | key auth (401 invalid/missing), `GET/POST projects`, `GET/POST/PATCH/DELETE chapters`, `append`, `storyboard`, `export` + poll to `done`, `ai/generate` offline fallback, `X-RateLimit-*` + `X-Request-Id` headers |
 | Notifications | list/mark-read works; probe rows cleaned |
@@ -58,7 +60,9 @@ All five phases from `Phase.md` have working surfaces in this repo.
 6. **Change tracking** is a version-diff review (accept/reject per hunk), not a live track-changes
    layer inside the editor.
 7. **Daily writing goal** is browser-local per project/day; it is not synced across devices.
-8. **Comment anchors** use ProseMirror document positions, so they can drift if the text above them is
+8. **Cover render output is a raster PNG** — text stays editable in the layer document, but the
+   exported file is an image, so editability is lost once rendered.
+9. **Comment anchors** use ProseMirror document positions, so they can drift if the text above them is
    heavily rewritten. The quoted text is stored alongside for recovery.
 
 ## Layout of the codebase

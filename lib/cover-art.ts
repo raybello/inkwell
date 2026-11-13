@@ -45,12 +45,16 @@ export interface CoverBackground {
 export interface BaseLayer {
   id: string;
   type: LayerType;
-  /** Normalised position of the layer's top-left corner. */
+  /** Normalised position of the layer's top-left corner (before rotation). */
   x: number;
   y: number;
   /** Normalised width (0–1 of the canvas width). */
   width: number;
   opacity: number;
+  /** Degrees, clockwise, about the layer's centre. */
+  rotation: number;
+  /** Multiplier applied on top of width/height (images and shapes). */
+  scale: number;
   locked?: boolean;
 }
 
@@ -138,6 +142,8 @@ export function defaultSideDoc(side: CoverSide, input: {
           y: 0.16,
           width: 0.76,
           opacity: 1,
+          rotation: 0,
+          scale: 1,
           font: "fraunces",
           size: 46,
           weight: 400,
@@ -156,6 +162,8 @@ export function defaultSideDoc(side: CoverSide, input: {
           y: 0.82,
           width: 0.76,
           opacity: 0.9,
+          rotation: 0,
+          scale: 1,
           font: "inter",
           size: 30,
           weight: 500,
@@ -181,6 +189,8 @@ export function defaultSideDoc(side: CoverSide, input: {
         y: 0.62,
         width: 0.8,
         opacity: 1,
+          rotation: 0,
+          scale: 1,
         font: "fraunces",
         size: 132,
         weight: 600,
@@ -201,6 +211,8 @@ export function defaultSideDoc(side: CoverSide, input: {
               y: 0.78,
               width: 0.8,
               opacity: 0.92,
+          rotation: 0,
+          scale: 1,
               font: "fraunces" as const,
               size: 52,
               weight: 400,
@@ -221,6 +233,8 @@ export function defaultSideDoc(side: CoverSide, input: {
         y: 0.9,
         width: 0.8,
         opacity: 1,
+          rotation: 0,
+          scale: 1,
         font: "inter",
         size: 34,
         weight: 500,
@@ -289,6 +303,8 @@ export function normaliseSide(raw: unknown, fallback: CoverSideDoc): CoverSideDo
       y: clamp01(l.y, 0.1),
       width: Math.max(0.02, Math.min(1, typeof l.width === "number" ? l.width : 0.5)),
       opacity: Math.max(0, Math.min(1, typeof l.opacity === "number" ? l.opacity : 1)),
+      rotation: num(l.rotation, 0, -180, 180),
+      scale: num(l.scale, 1, 0.05, 6),
       locked: bool(l.locked),
     };
     if (l.type === "text") {
@@ -369,6 +385,19 @@ export function loadImage(url: string): Promise<HTMLImageElement | null> {
     img.src = url;
     setTimeout(() => finish(null), 12000);
   });
+}
+
+/** Synchronous cache lookup — drawing must never await mid-paint. */
+export function peekImage(url: string): HTMLImageElement | null {
+  const cached = imageCache.get(url);
+  return cached && cached.complete && cached.naturalWidth > 0 ? cached : null;
+}
+
+export function coverImageUrls(side: CoverSideDoc): string[] {
+  const urls = new Set<string>();
+  if (side.background.kind === "image" && side.background.imageUrl) urls.add(side.background.imageUrl);
+  for (const layer of side.layers) if (layer.type === "image") urls.add(layer.url);
+  return [...urls];
 }
 
 export async function preloadSideImages(side: CoverSideDoc): Promise<void> {
@@ -454,6 +483,10 @@ export async function drawCoverSide(
   const width = COVER_WIDTH * scale;
   const height = COVER_HEIGHT * scale;
 
+  // Preload every image up front: awaiting inside the draw loop lets two paints
+  // interleave on one context and leak transforms into each other.
+  await preloadSideImages(side);
+
   ctx.save();
   ctx.clearRect(0, 0, width, height);
 
@@ -462,7 +495,7 @@ export async function drawCoverSide(
   ctx.fillRect(0, 0, width, height);
 
   if (side.background.kind === "image" && side.background.imageUrl) {
-    const img = await loadImage(side.background.imageUrl);
+    const img = peekImage(side.background.imageUrl);
     if (img) {
       drawCoverFit(ctx, img, 0, 0, width, height, "cover");
     }
@@ -478,42 +511,63 @@ export async function drawCoverSide(
   for (const layer of side.layers) {
     ctx.save();
     ctx.globalAlpha = layer.opacity;
-    const x = layer.x * width;
-    const y = layer.y * height;
-    const w = layer.width * width;
+
+    const rotation = ((layer.rotation ?? 0) * Math.PI) / 180;
+    const scalar = Math.max(0.05, layer.scale ?? 1);
+    const originX = layer.x * width;
+    const originY = layer.y * height;
+    const baseWidth = layer.width * width;
 
     if (layer.type === "text") {
-      ctx.font = `${layer.italic ? "italic " : ""}${layer.weight} ${layer.size * scale}px ${fontStack(layer.font)}`;
+      const w = baseWidth * scalar;
+      const size = layer.size * scale * scalar;
+      ctx.font = `${layer.italic ? "italic " : ""}${layer.weight} ${size}px ${fontStack(layer.font)}`;
       ctx.fillStyle = layer.color;
       ctx.textBaseline = "top";
       (ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing =
-        `${layer.letterSpacing * scale}px`;
-      ctx.textAlign = layer.align === "center" ? "center" : layer.align === "right" ? "right" : "left";
-      const anchorX = layer.align === "center" ? x + w / 2 : layer.align === "right" ? x + w : x;
-      const { lines, lineHeightPx } = wrapText(ctx, layer, w, scale);
+        `${layer.letterSpacing * scale * scalar}px`;
+      ctx.textAlign = "left";
+      const { lines, lineHeightPx } = wrapText(
+        ctx,
+        { ...layer, size: layer.size * scalar, letterSpacing: layer.letterSpacing * scalar },
+        w,
+        scale,
+      );
+      const h = Math.max(lineHeightPx, lines.length * lineHeightPx);
+      ctx.translate(originX + baseWidth / 2, originY + h / 2);
+      ctx.rotate(rotation);
+      ctx.translate(-baseWidth / 2, -h / 2);
       lines.forEach((line, index) => {
-        ctx.fillText(line, anchorX, y + index * lineHeightPx);
+        const lineWidth = ctx.measureText(line).width;
+        const anchorX =
+          layer.align === "center" ? (baseWidth - lineWidth) / 2 : layer.align === "right" ? baseWidth - lineWidth : 0;
+        ctx.fillText(line, anchorX, index * lineHeightPx);
       });
-    } else if (layer.type === "image") {
-      const img = await loadImage(layer.url);
-      const h = layer.height * height;
-      ctx.beginPath();
-      roundRect(ctx, x, y, w, h, layer.radius * scale);
-      ctx.clip();
-      if (img) {
-        drawCoverFit(ctx, img, x, y, w, h, layer.fit);
-      } else {
-        ctx.fillStyle = "rgba(255,255,255,0.06)";
-        ctx.fillRect(x, y, w, h);
-      }
     } else {
-      const h = Math.max(1, layer.height * height);
-      if (layer.shape === "line") {
+      const baseHeight = layer.height * height;
+      const w = baseWidth * scalar;
+      const h = baseHeight * scalar;
+      ctx.translate(originX + baseWidth / 2, originY + baseHeight / 2);
+      ctx.rotate(rotation);
+      ctx.translate(-w / 2, -h / 2);
+
+      if (layer.type === "image") {
+        const img = peekImage(layer.url);
+        ctx.beginPath();
+        roundRect(ctx, 0, 0, w, h, layer.radius * scale);
+        ctx.clip();
+        if (img) {
+          drawCoverFit(ctx, img, 0, 0, w, h, layer.fit);
+        } else {
+          ctx.fillStyle = "rgba(255,255,255,0.06)";
+          ctx.fillRect(0, 0, w, h);
+        }
+      } else if (layer.shape === "line") {
         ctx.fillStyle = layer.color;
-        ctx.fillRect(x, y, w, Math.max(1 * scale, layer.borderWidth * scale || 2 * scale));
+        ctx.fillRect(0, 0, w, Math.max(scale, layer.borderWidth * scale));
       } else {
         ctx.beginPath();
-        roundRect(ctx, x, y, w, h, layer.radius * scale);
+        roundRect(ctx, 0, 0, w, h, layer.radius * scale);
         if (layer.borderWidth > 0) {
           ctx.strokeStyle = layer.color;
           ctx.lineWidth = layer.borderWidth * scale;
@@ -605,6 +659,28 @@ export async function renderCoverSide(
   });
 }
 
+/**
+ * True when a normalised canvas point falls inside a layer, taking rotation and
+ * scale into account. `heightNorm` is the measured height for text layers.
+ */
+export function pointInLayer(
+  layer: CoverLayer,
+  heightNorm: number,
+  nx: number,
+  ny: number,
+): boolean {
+  const centreX = (layer.x + layer.width / 2) * COVER_WIDTH;
+  const centreY = (layer.y + heightNorm / 2) * COVER_HEIGHT;
+  const dx = nx * COVER_WIDTH - centreX;
+  const dy = ny * COVER_HEIGHT - centreY;
+  const angle = (-(layer.rotation ?? 0) * Math.PI) / 180;
+  const rx = dx * Math.cos(angle) - dy * Math.sin(angle);
+  const ry = dx * Math.sin(angle) + dy * Math.cos(angle);
+  const scalar = layer.scale ?? 1;
+  return Math.abs(rx) <= (layer.width * COVER_WIDTH * scalar) / 2 &&
+    Math.abs(ry) <= (heightNorm * COVER_HEIGHT * scalar) / 2;
+}
+
 /** Layer bounds in normalised units, used for hit-testing and selection outlines. */
 export function layerBounds(layer: CoverLayer, textHeights: Record<string, number> = {}) {
   const height =
@@ -625,6 +701,8 @@ export function newTextLayer(partial: Partial<TextLayer> = {}): TextLayer {
     y: 0.45,
     width: 0.7,
     opacity: 1,
+    rotation: 0,
+    scale: 1,
     font: "fraunces",
     size: 64,
     weight: 500,
@@ -650,6 +728,8 @@ export function newImageLayer(url: string, partial: Partial<ImageLayer> = {}): I
     fit: "cover",
     radius: 0,
     opacity: 1,
+    rotation: 0,
+    scale: 1,
     ...partial,
   };
 }
@@ -668,6 +748,8 @@ export function newShapeLayer(partial: Partial<ShapeLayer> = {}): ShapeLayer {
     borderWidth: 3,
     filled: false,
     opacity: 1,
+    rotation: 0,
+    scale: 1,
     ...partial,
   };
 }

@@ -92,7 +92,20 @@ export async function saveRenderedCover(input: {
     return { ok: false, error: "The rendered cover is larger than 24 MB. Try a smaller background image." };
   }
 
-  const profile = await getProfile();
+  const supabase = await createClient();
+
+  // Remember the render this one supersedes so re-rendering does not pile up
+  // orphaned PNGs in the asset library and storage bucket.
+  const { data: existing } = await supabase
+    .from("projects")
+    .select("cover_front_url, cover_back_url")
+    .eq("id", input.projectId)
+    .maybeSingle();
+  const previousUrl =
+    input.side === "front"
+      ? (existing as { cover_front_url?: string | null } | null)?.cover_front_url
+      : (existing as { cover_back_url?: string | null } | null)?.cover_back_url;
+
   const filename = `${input.side}-cover-${Date.now()}.png`;
   const file = new File([bytes], filename, { type: "image/png" });
 
@@ -108,7 +121,6 @@ export async function saveRenderedCover(input: {
     return { ok: false, error: error instanceof Error ? error.message : "Upload failed." };
   }
 
-  const supabase = await createClient();
   const patch: Record<string, unknown> = {
     cover_front: input.side === "front" ? normaliseCoverDoc(input.doc, input.doc as CoverDoc).front : undefined,
     cover_back: input.side === "back" ? normaliseCoverDoc(input.doc, input.doc as CoverDoc).back : undefined,
@@ -123,6 +135,21 @@ export async function saveRenderedCover(input: {
 
   const { error } = await supabase.from("projects").update(patch).eq("id", input.projectId);
   if (error) return { ok: false, error: error.message };
+
+  // Drop the superseded render (row + storage object) once the new one is live.
+  if (previousUrl && previousUrl !== asset.public_url) {
+    const { data: stale } = await supabase
+      .from("assets")
+      .select("id, storage_path, filename")
+      .eq("project_id", input.projectId)
+      .eq("public_url", previousUrl)
+      .like("filename", "%-cover-%")
+      .maybeSingle();
+    if (stale) {
+      if (stale.storage_path) await supabase.storage.from("assets").remove([stale.storage_path]);
+      await supabase.from("assets").delete().eq("id", stale.id);
+    }
+  }
 
   await logActivity({
     projectId: input.projectId,
@@ -142,7 +169,7 @@ export async function saveRenderedCover(input: {
       url: asset.public_url,
       assetId: asset.id,
       side: input.side,
-      savedBy: profile?.id ?? null,
+      savedBy: guard.userId,
     },
   };
 }
