@@ -23,6 +23,7 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
     display_name: (user.user_metadata?.display_name as string) ?? user.email?.split("@")[0] ?? "Writer",
     avatar_url: (user.user_metadata?.avatar_url as string) ?? null,
     plan: "free",
+    is_admin: false,
     settings: {},
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),

@@ -44,14 +44,14 @@ export const PLANS: Record<PlanId, Plan> = {
   free: plan({
     id: "free",
     name: "Free",
-    tagline: "Finish one project, start to end.",
+    tagline: "Five projects, every tool, no time limit.",
     monthly: 0,
-    projects: 1,
+    projects: 5,
     words: 25_000,
     collaborators: 0,
     apiRequests: 0,
     webhooks: false,
-    notes: ["One full project", "Every export format", "No time limit"],
+    notes: ["Up to 5 projects", "Every export format", "No time limit"],
   }),
   pro: plan({
     id: "pro",
@@ -173,7 +173,7 @@ export const FEATURE_MATRIX: FeatureRow[] = [
   {
     key: "projects",
     label: "Projects",
-    values: { free: "1", pro: "10", studio: "Unlimited" },
+    values: { free: "5", pro: "10", studio: "Unlimited" },
     hint: "Each project holds chapters, notes, storyboard and canvases.",
   },
   {

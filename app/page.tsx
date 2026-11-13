@@ -115,7 +115,7 @@ export default async function LandingPage() {
           </div>
           <div className="mt-14 grid gap-3 text-xs text-muted sm:grid-cols-3">
             {[
-              ["No credit card", "Free plan includes one full project"],
+              ["No credit card", "Free plan includes five projects"],
               ["Your words, portable", "One-click export to EPUB, PDF, DOCX"],
               ["Built for agents", "Scoped REST API and webhooks"],
             ].map(([t, s]) => (

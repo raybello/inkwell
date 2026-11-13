@@ -20,11 +20,14 @@ export function ProjectCard({
   view,
   onDuplicate,
   onDelete,
+  canManage = true,
 }: {
   project: ProjectSummary;
   view: "grid" | "list";
   onDuplicate: (id: string) => void;
   onDelete: (project: ProjectSummary) => void;
+  /** Owner (or admin) — only they may delete. */
+  canManage?: boolean;
 }) {
   const progress =
     project.target_word_count && project.target_word_count > 0
@@ -69,17 +72,21 @@ export function ProjectCard({
           >
             Duplicate
           </DropdownItem>
-          <DropdownSeparator />
-          <DropdownItem
-            icon={<Trash2 />}
-            danger
-            onClick={() => {
-              close();
-              onDelete(project);
-            }}
-          >
-            Delete project
-          </DropdownItem>
+          {canManage && (
+            <>
+              <DropdownSeparator />
+              <DropdownItem
+                icon={<Trash2 />}
+                danger
+                onClick={() => {
+                  close();
+                  onDelete(project);
+                }}
+              >
+                Delete project
+              </DropdownItem>
+            </>
+          )}
         </>
       )}
     </Dropdown>

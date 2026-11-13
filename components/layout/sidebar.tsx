@@ -38,7 +38,14 @@ export function Sidebar({
   onSearch,
 }: {
   projects: ProjectSummary[];
-  user: { name: string; email: string; avatar: string | null; plan: string };
+  user: {
+    name: string;
+    email: string;
+    avatar: string | null;
+    plan: string;
+    isAdmin: boolean;
+    projectLimit: number | null;
+  };
   open: boolean;
   onClose: () => void;
   onSearch: () => void;
@@ -143,13 +150,28 @@ export function Sidebar({
         </div>
 
         <div className="border-t border-border p-3">
-          {user.plan === "free" && (
+          {user.isAdmin ? (
+            <Link
+              href="/app/settings/billing"
+              className="mb-3 flex items-center gap-2 rounded-lg border border-sage/30 bg-sage/10 px-2.5 py-2 text-[12px] text-sage transition hover:bg-sage/15"
+            >
+              <Sparkles className="size-3.5 shrink-0" />
+              <span className="flex-1 leading-tight">Unlimited access</span>
+              <ChevronRight className="size-3" />
+            </Link>
+          ) : (
             <Link
               href="/app/settings/billing"
               className="mb-3 flex items-center gap-2 rounded-lg border border-accent/25 bg-accent/8 px-2.5 py-2 text-[12px] text-accent-soft transition hover:bg-accent/12"
             >
               <Sparkles className="size-3.5 shrink-0" />
-              <span className="flex-1 leading-tight">Free plan · 1 project</span>
+              <span className="flex-1 leading-tight">
+                {user.plan === "free" ? "Free plan" : `${user.plan[0].toUpperCase()}${user.plan.slice(1)} plan`}
+                {" · "}
+                {user.projectLimit == null
+                  ? "unlimited projects"
+                  : `${projects.length} of ${user.projectLimit} project${user.projectLimit === 1 ? "" : "s"}`}
+              </span>
               <ChevronRight className="size-3" />
             </Link>
           )}

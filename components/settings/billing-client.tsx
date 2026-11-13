@@ -45,6 +45,8 @@ export interface BillingClientProps {
   projectsUsed: number;
   wordsUsed: number;
   checkoutStatus: "success" | "cancelled" | null;
+  /** Admin accounts (profiles.is_admin) are not bound by plan quotas. */
+  unrestricted?: boolean;
 }
 
 export function BillingClient({
@@ -56,9 +58,21 @@ export function BillingClient({
   projectsUsed,
   wordsUsed,
   checkoutStatus,
+  unrestricted = false,
 }: BillingClientProps) {
   const current = PLANS[plan];
-  const limits = planLimits(plan);
+  const limits = unrestricted
+    ? {
+        ...planLimits(plan),
+        projects: null,
+        words: null,
+        collaborators: 5,
+        apiRequests: 100_000,
+        webhooks: true,
+        hasApi: true,
+        hasCollaboration: true,
+      }
+    : planLimits(plan);
   const [interval, setInterval] = React.useState<BillingInterval>("month");
   const [pending, startTransition] = React.useTransition();
   const [targetPlan, setTargetPlan] = React.useState<PlanId | null>(null);
@@ -130,6 +144,13 @@ export function BillingClient({
       {checkoutStatus === "cancelled" && (
         <Banner tone="neutral" icon={<Info className="size-4" />} title="Checkout cancelled">
           Nothing was charged and your plan is unchanged.
+        </Banner>
+      )}
+
+      {unrestricted && (
+        <Banner tone="sage" icon={<BadgeCheck className="size-4" />} title="Unlimited access">
+          This account is not bound by plan quotas — unlimited projects, full API access and webhooks. Plan
+          cards below are shown for reference only.
         </Banner>
       )}
 

@@ -21,6 +21,13 @@ export async function listProjects(): Promise<ProjectSummary[]> {
     .order("updated_at", { ascending: false });
   if (!projects?.length) return [];
 
+  const { data: me } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", user?.id ?? "")
+    .maybeSingle();
+  const isAdmin = Boolean(me?.is_admin);
+
   const ids = projects.map((p) => p.id);
   const [{ data: chapters }, { data: members }] = await Promise.all([
     supabase.from("chapters").select("project_id, word_count").in("project_id", ids),
@@ -31,8 +38,11 @@ export async function listProjects(): Promise<ProjectSummary[]> {
     const chs = (chapters ?? []).filter((c) => c.project_id === p.id);
     const mem = (members ?? []).filter((m) => m.project_id === p.id);
     const mine = mem.find((m) => m.user_id === user?.id);
-    const role: Role | null =
-      p.owner_id === user?.id ? "owner" : ((mine?.role as Role | undefined) ?? null);
+    const role: Role | null = isAdmin
+      ? "owner"
+      : p.owner_id === user?.id
+        ? "owner"
+        : ((mine?.role as Role | undefined) ?? null);
     return {
       ...p,
       wordCount: chs.reduce((sum, c) => sum + (c.word_count ?? 0), 0),

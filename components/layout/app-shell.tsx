@@ -12,7 +12,14 @@ export function AppShell({
   children,
 }: {
   projects: ProjectSummary[];
-  user: { name: string; email: string; avatar: string | null; plan: string };
+  user: {
+    name: string;
+    email: string;
+    avatar: string | null;
+    plan: string;
+    isAdmin: boolean;
+    projectLimit: number | null;
+  };
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);

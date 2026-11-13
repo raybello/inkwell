@@ -87,6 +87,7 @@ export default async function BillingPage({
         projectsUsed={projectIds.length}
         wordsUsed={wordsUsed}
         checkoutStatus={checkoutStatus}
+        unrestricted={profile?.is_admin ?? false}
       />
     </div>
   );

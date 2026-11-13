@@ -18,6 +18,17 @@ All five phases from `Phase.md` have working surfaces in this repo.
 | Agent API | key auth (401 invalid/missing), `GET/POST projects`, `GET/POST/PATCH/DELETE chapters`, `append`, `storyboard`, `export` + poll to `done`, `ai/generate` offline fallback, `X-RateLimit-*` + `X-Request-Id` headers |
 | Notifications | list/mark-read works; probe rows cleaned |
 
+## Access control
+
+- `profiles.plan` drives quotas (`lib/plans.ts`): Free = 5 projects / 25k words, Pro = 10 projects,
+  Studio = unlimited. Enforced server-side on create and duplicate, not just in the UI.
+- `profiles.is_admin` grants unrestricted access: no quotas, and `project_role()` returns `owner`
+  for every project, so all RLS policies open up. Grant with:
+  `update public.profiles set is_admin = true where email = '...';`
+- Project listing is membership-only. A `is_public` flag can no longer push a project into someone
+  else's library — public reading happens exclusively through `/share/<token>` (which validates the
+  share link before using the service role).
+
 ## Built but not exercised in the browser
 
 - **Canvas (tldraw 3.15)** — mounts and renders (verified), autosave path code-reviewed; headless

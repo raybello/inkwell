@@ -23,6 +23,24 @@ npm run db:seed        # demo user + "The Salt Road" sample project
 
 Demo credentials: `demo@inkwell.studio` / `inkwell-demo-2026`.
 
+### Plans and access levels
+
+Free accounts own up to **5 projects** (defined once, in `lib/plans.ts`); Pro and Studio raise that
+limit. Quotas are enforced in `createProjectAction` / `duplicateProjectAction`.
+
+To give an account unrestricted access — unlimited projects, every feature, and owner rights on
+every project — flip one column:
+
+```sql
+update public.profiles set is_admin = true where email = 'you@example.com';
+-- revoke:
+update public.profiles set is_admin = false where email = 'you@example.com';
+```
+
+`is_admin` is read by `public.is_admin()`, which `project_role()` and `is_project_member()` consult,
+so every existing RLS policy grants that account full access. The sidebar shows "Unlimited access"
+and plan quotas are skipped in server actions and the billing screen.
+
 ## What is implemented
 
 | Area | Routes |

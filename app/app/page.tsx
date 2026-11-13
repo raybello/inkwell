@@ -72,7 +72,7 @@ export default async function LibraryPage() {
               </Button>
             </Link>
             <p className="mt-6 flex items-center gap-1.5 text-[11px] text-muted">
-              <Sparkles className="size-3 text-accent" /> Free plan includes one full project.
+              <Sparkles className="size-3 text-accent" /> Free plan includes five projects.
             </p>
           </div>
         </div>

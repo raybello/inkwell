@@ -8,6 +8,8 @@ export interface Profile {
   display_name: string | null;
   avatar_url: string | null;
   plan: "free" | "pro" | "studio";
+  /** Unrestricted access: every project, no plan limits. Set in the database. */
+  is_admin: boolean;
   settings: Record<string, unknown>;
   created_at: string;
   updated_at: string;

@@ -94,6 +94,7 @@ export function LibraryView({ projects }: { projects: ProjectSummary[] }) {
               key={p.id}
               project={p}
               view={view}
+              canManage={p.role === "owner"}
               onDuplicate={(id) => {
                 toast.promise(duplicateProjectAction(id), {
                   loading: "Duplicating…",

@@ -3,10 +3,34 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getSessionUser } from "@/lib/auth";
+import { getProfile, getSessionUser } from "@/lib/auth";
+import { formatProjectsLimit, planLimits, planName } from "@/lib/plans";
 import type { ProjectType } from "@/lib/types";
 
 export type ActionState = { error?: string; success?: string } | null;
+
+/**
+ * Project quota. Admins (profiles.is_admin) are never limited.
+ * Returns an error message when the account is at its plan's cap.
+ */
+async function projectQuotaError(userId: string): Promise<string | null> {
+  const profile = await getProfile();
+  if (profile?.is_admin) return null;
+
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("projects")
+    .select("id", { count: "exact", head: true })
+    .eq("owner_id", userId);
+
+  const limit = planLimits(profile?.plan).projects;
+  if (limit == null) return null;
+
+  if ((count ?? 0) >= limit) {
+    return `The ${planName(profile?.plan)} plan includes ${formatProjectsLimit(limit)}. Delete a project or upgrade to add another.`;
+  }
+  return null;
+}
 
 function str(fd: FormData, key: string) {
   const v = fd.get(key);
@@ -19,6 +43,9 @@ export async function createProjectAction(_prev: ActionState, fd: FormData): Pro
 
   const title = str(fd, "title");
   if (!title) return { error: "Give the project a working title." };
+
+  const quota = await projectQuotaError(user.id);
+  if (quota) return { error: quota };
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -100,6 +127,9 @@ export async function deleteProjectAction(id: string): Promise<ActionState> {
 export async function duplicateProjectAction(id: string): Promise<ActionState> {
   const user = await getSessionUser();
   if (!user) return { error: "You must be signed in." };
+  const quota = await projectQuotaError(user.id);
+  if (quota) return { error: quota };
+
   const supabase = await createClient();
 
   const { data: project } = await supabase.from("projects").select("*").eq("id", id).single();

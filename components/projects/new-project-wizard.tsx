@@ -152,7 +152,7 @@ export function NewProjectWizard({ plan }: { plan: string }) {
                   <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] text-accent">
                     <Sparkles className="size-3" /> Free plan
                   </p>
-                  <p className="mt-2 text-sm">One active project, all export formats, no collaborators.</p>
+                  <p className="mt-2 text-sm">Up to 5 projects, every export format, no collaborators.</p>
                   <Link href="/app/settings/billing" className="mt-2 inline-block text-xs text-accent hover:underline">
                     Compare plans →
                   </Link>
