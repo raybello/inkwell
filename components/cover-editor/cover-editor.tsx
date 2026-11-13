@@ -359,6 +359,8 @@ export function CoverEditor({
           <button
             type="button"
             onClick={() => setTrayOpen((v) => !v)}
+            aria-label={trayOpen ? "Collapse asset tray" : "Open asset tray"}
+            aria-expanded={trayOpen}
             className="flex h-10 items-center justify-between border-b border-border px-2.5 text-[10px] uppercase tracking-[0.14em] text-muted hover:text-foreground"
           >
             {trayOpen ? "Assets" : <ImagePlus className="size-4" />}
