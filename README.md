@@ -53,4 +53,7 @@ Demo credentials: `demo@inkwell.studio` / `inkwell-demo-2026`.
 - **Realtime** uses Supabase channels: Yjs updates for the editor, presence for collaborator avatars.
 - **Webhooks** are signed (`X-Inkwell-Signature: sha256=<hmac>`) with retries and delivery logs.
 
-See `docs/CONVENTIONS.md` for the working conventions and `PLAN.md` / `Phase.md` for the product spec.
+See `docs/IMPLEMENTATION-STATUS.md` for what is verified, what is not, and the known gaps (tldraw
+licence watermark, per-instance rate limiting, pdf-lib image formats, deferred Next 16 / Zod 4 majors).
+`docs/CONVENTIONS.md` holds the working conventions; `PLAN.md` and `Phase.md` are the product spec.
+`docs/MOBILE-AUDIT.md` records the responsive audit.
