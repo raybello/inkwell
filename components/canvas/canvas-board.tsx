@@ -118,7 +118,11 @@ export function CanvasBoard({
       try {
         const snapshot = editor.getSnapshot();
         const preview = encodePreview(snapshot);
-        const result = await saveCanvasContent(canvas.id, snapshot, preview);
+        // Send JSON, not the snapshot object: some shape props (rich text, arrow
+        // terminals) are class instances, and React Flight encodes those as opaque
+        // temporary references that the server cannot decode.
+        const payload = JSON.stringify(snapshot);
+        const result = await saveCanvasContent(canvas.id, payload, preview);
         if (result.ok) {
           setSaveState("saved");
           setSavedAt(result.data.savedAt);

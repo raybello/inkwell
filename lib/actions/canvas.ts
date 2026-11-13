@@ -12,6 +12,7 @@ export type CanvasActionResult<T = undefined> =
 
 const NAME_MAX = 120;
 const THUMB_MAX = 6000;
+const SNAPSHOT_MAX = 12 * 1024 * 1024;
 const TEXT_MAX = 20000;
 
 function cleanName(raw: unknown) {
@@ -121,10 +122,31 @@ export async function deleteCanvas(canvasId: string): Promise<CanvasActionResult
  */
 export async function saveCanvasContent(
   canvasId: string,
-  content: unknown,
+  snapshot: string | Record<string, unknown>,
   thumbnailUrl?: string | null,
 ): Promise<CanvasActionResult<{ savedAt: string }>> {
-  if (!content || typeof content !== "object") return { ok: false, error: "Empty snapshot." };
+  // New clients send the snapshot as JSON text. Objects are still accepted so a
+  // tab running an older bundle keeps working.
+  let content: Record<string, unknown>;
+  if (typeof snapshot === "string") {
+    if (snapshot.length < 2) return { ok: false, error: "Empty snapshot." };
+    if (snapshot.length > SNAPSHOT_MAX) {
+      return { ok: false, error: "This canvas is too large to save. Remove some images and try again." };
+    }
+    try {
+      const parsed = JSON.parse(snapshot) as unknown;
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return { ok: false, error: "Malformed snapshot." };
+      }
+      content = parsed as Record<string, unknown>;
+    } catch {
+      return { ok: false, error: "Malformed snapshot." };
+    }
+  } else if (snapshot && typeof snapshot === "object" && !Array.isArray(snapshot)) {
+    content = snapshot;
+  } else {
+    return { ok: false, error: "Empty snapshot." };
+  }
 
   const canvas = await canvasProject(canvasId);
   if (!canvas) return { ok: false, error: "Canvas not found." };

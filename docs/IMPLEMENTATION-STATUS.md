@@ -34,9 +34,10 @@ All five phases from `Phase.md` have working surfaces in this repo.
 
 ## Built but not exercised in the browser
 
-- **Canvas (tldraw 3.15)** — mounts and renders (verified), autosave path code-reviewed; headless
-  Chromium saturates the main thread on tldraw's render loop, so drag/draw interactions were not
-  automated. Manual check recommended.
+- **Canvas (tldraw 3.15)** — mounts, draws and autosaves (verified with a text shape, a labelled
+  box and arrows: "Snapshot saved" and the rows land in `canvases.content`). The snapshot is sent as
+  JSON text because React Flight encodes class instances in shape props as opaque temporary
+  references, which the server cannot decode.
 - **Stripe checkout / portal** — request shapes implemented with raw `fetch`; no keys configured, so
   the UI runs in clearly-labelled demo mode (no payment, no silent plan change).
 - **Resend email** — no key configured; `sendEmail()` returns `{sent:false, reason:'email_not_configured'}`.
