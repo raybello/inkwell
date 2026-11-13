@@ -14,6 +14,21 @@ Environment lives in `.env.local` (Supabase URL, publishable key, service-role k
 migrations). Integration keys (Anthropic/OpenAI/Unsplash/Resend/Stripe) are optional — every feature
 that needs one degrades gracefully and says so.
 
+### Running from VS Code
+
+`.vscode/launch.json` ships three runnable configurations:
+
+| Configuration | What it does |
+|---|---|
+| **inkwell: dev server** | `npm run dev`, opens the browser when Next reports its Local URL |
+| **inkwell: build + serve (production)** | `npm run build && npm run start` in one terminal |
+| **inkwell: debug dev server (breakpoints)** | `npm run dev:debug` with `--inspect`, so breakpoints in server components, route handlers and server actions hit |
+
+The production entry must use `"type": "node-terminal"`. A plain `node` launch passes
+`runtimeArgs` as separate arguments — putting `" && "` and a second `npm` there appends them to
+`next build`, which then reports *"Invalid project directory provided"*. Builds are also available as
+tasks (`Terminal → Run Task → inkwell: build`), with a `$tsc` problem matcher.
+
 ### Database
 
 ```bash
