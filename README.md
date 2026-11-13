@@ -56,6 +56,41 @@ update public.profiles set is_admin = false where email = 'you@example.com';
 so every existing RLS policy grants that account full access. The sidebar shows "Unlimited access"
 and plan quotas are skipped in server actions and the billing screen.
 
+## CI / Deploy
+
+Two GitHub Actions workflows live in `.github/workflows/`:
+
+| Workflow | Trigger | What it does |
+|---|---|---|
+| **CI** (`ci.yml`) | Push or PR → `main` | `tsc --noEmit` + `next build` |
+| **Deploy** (`deploy.yml`) | Push → `main` | Builds and deploys to Vercel via CLI |
+
+### Required GitHub secrets
+
+Add these in **Settings → Secrets and variables → Actions**:
+
+| Secret | Where to get it |
+|---|---|
+| `VERCEL_TOKEN` | vercel.com → Account Settings → Tokens |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project → Settings → API |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase project → Settings → API |
+
+The CI workflow needs the two Supabase vars so the Next.js build can resolve env references at
+compile time. The deploy workflow uses `vercel pull` to fetch the full production environment from
+Vercel itself, so no other secrets are needed there.
+
+### Linking the Vercel project
+
+Before the deploy workflow runs for the first time, link this repo to a Vercel project once from
+your machine:
+
+```bash
+npm install -g vercel
+vercel link          # follow the prompts; writes .vercel/project.json
+git add .vercel/project.json
+git commit -m "link vercel project"
+```
+
 ## What is implemented
 
 | Area | Routes |
