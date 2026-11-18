@@ -48,5 +48,16 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|ico)$).*)"],
+  // The middleware's job is session refresh + auth redirects, which only
+  // matter on surfaces that have a session at all. Everything else is matched
+  // out on purpose:
+  //  - /api/* routes build their own Supabase client (session auth) or verify
+  //    an API key / Stripe signature (service-role auth) inside the handler;
+  //  - public pages (marketing, /share, /docs) never need a session check —
+  //    `app/app/layout.tsx` runs `requireUser()` server-side, so /app stays
+  //    guarded even if this matcher is narrowed further.
+  // The old catch-all matcher ran a Supabase auth.getUser() round-trip in
+  // front of every request, doubling auth work for API-key routes and adding
+  // latency to Stripe webhooks and public share reads.
+  matcher: ["/app/:path*", "/auth/:path*"],
 };
