@@ -17,7 +17,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, Tooltip } from "@/components/ui/misc";
+import { Tooltip } from "@/components/ui/misc";
 import { CoverCanvas } from "@/components/cover-editor/cover-canvas";
 import { CoverInspector } from "@/components/cover-editor/cover-inspector";
 import { clearRenderedCover, saveCoverLayout, saveRenderedCover } from "@/lib/actions/cover-art";

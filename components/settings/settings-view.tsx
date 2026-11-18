@@ -340,7 +340,7 @@ export function SettingsView({ profile, settings, deletionRequestedLabel, emailC
             <span className="min-w-0">
               <span className="block font-serif text-base">Plans &amp; billing</span>
               <span className="block truncate text-xs text-muted">
-                You're on the {profile.plan === "free" ? "Free" : profile.plan === "pro" ? "Pro" : "Studio"} plan ·
+                You&apos;re on the {profile.plan === "free" ? "Free" : profile.plan === "pro" ? "Pro" : "Studio"} plan ·
                 usage, invoices and plan changes
               </span>
             </span>
@@ -509,7 +509,7 @@ function DeleteAccountDialog({ email, emailConfigured }: { email: string | null;
       >
         <form id="delete-account-form" action={formAction} className="space-y-4">
           <div className="rounded-md border border-border bg-ink-850/60 px-3 py-2 text-xs leading-relaxed text-muted-strong">
-            <p>Nothing is deleted right now. We'll email {email ?? "your address"}{emailConfigured ? "" : " (email delivery is currently off, so note this yourself)"} and keep your work for 14 days.</p>
+            <p>Nothing is deleted right now. We&apos;ll email {email ?? "your address"}{emailConfigured ? "" : " (email delivery is currently off, so note this yourself)"} and keep your work for 14 days.</p>
           </div>
           <Field
             label={`Type ${DELETE_CONFIRMATION} to confirm`}

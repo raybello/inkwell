@@ -14,7 +14,6 @@ import {
   wrapText,
   type CoverLayer,
   type CoverSideDoc,
-  type TextLayer,
 } from "@/lib/cover-art";
 import { cn } from "@/lib/utils";
 

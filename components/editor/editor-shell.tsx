@@ -242,7 +242,6 @@ export function EditorShell({
       ];
     }
     return [...buildExtensions({ placeholder: "Begin where the story left off…" }), SearchHighlight];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collabMode, collab.ydoc, collab.awareness, user.name, user.color]);
 
   const editor = useEditor(

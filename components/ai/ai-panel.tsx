@@ -5,11 +5,7 @@
  * Contract: sliding AI assistant panel scoped to the current chapter.
  */
 export function AIPanel({
-  projectId,
-  chapterId,
   open,
-  onOpenChange,
-  onInsert,
 }: {
   projectId: string;
   chapterId: string;

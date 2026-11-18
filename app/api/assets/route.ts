@@ -9,7 +9,6 @@ import {
   MAX_UPLOAD_BYTES,
   fileExtension,
   formatBytes,
-  isAllowedMime,
   normalizeMime,
   parseTags,
 } from "@/components/assets/asset-utils";
