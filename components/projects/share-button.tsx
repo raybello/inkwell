@@ -22,7 +22,7 @@ export function ShareButton({
   const [enabled, setEnabled] = React.useState(isPublic);
   const [token, setToken] = React.useState(shareToken);
   const [copied, setCopied] = React.useState(false);
-  const [pending, setPending] = React.useState(false);
+  const [, setPending] = React.useState(false);
 
   const url = token ? `${typeof window !== "undefined" ? window.location.origin : ""}/share/${token}` : "";
 

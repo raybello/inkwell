@@ -163,7 +163,7 @@ export function ProjectCard({
   );
 }
 
-function Cover({ project, size }: { project: ProjectSummary; size: "sm" }) {
+function Cover({ project, size: _size }: { project: ProjectSummary; size: "sm" }) {
   if (project.cover_image_url) {
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={project.cover_image_url} alt="" className="size-10 shrink-0 rounded object-cover" />;

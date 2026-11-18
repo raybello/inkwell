@@ -16,8 +16,13 @@ export function hashApiKey(key: string): string {
 }
 
 export function generateApiKey(): { key: string; prefix: string; hash: string } {
-  const prefix = randomBytes(9).toString("base64url").slice(0, PREFIX_LENGTH);
-  const secret = randomBytes(32).toString("base64url");
+  // base64url's alphabet includes "_", which is the structural separator
+  // between prefix and secret — a "_" inside either part makes parseApiKey
+  // split the key at the wrong boundary (prefix mismatch -> auth fails).
+  // Map "_" to "-" (allowed by the parser, never a separator) so the only
+  // "_" characters in a key are the two structural ones.
+  const prefix = randomBytes(9).toString("base64url").replace(/_/g, "-").slice(0, PREFIX_LENGTH);
+  const secret = randomBytes(32).toString("base64url").replace(/_/g, "-");
   const key = `${KEY_PREFIX}_${prefix}_${secret}`;
   return { key, prefix, hash: hashApiKey(key) };
 }

@@ -48,7 +48,6 @@ export function CommentComposer({
 
   React.useEffect(() => {
     if (autoFocus) ref.current?.focus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoFocus]);
 
   React.useEffect(() => {

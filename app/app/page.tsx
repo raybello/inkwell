@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, LayoutGrid, List, Plus, Sparkles } from "lucide-react";
+import { BookOpen, Plus, Sparkles } from "lucide-react";
 import { listProjects } from "@/lib/data";
 import { getProfile } from "@/lib/auth";
 import { formatNumber } from "@/lib/utils";

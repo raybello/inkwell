@@ -155,7 +155,6 @@ export function useChapterCollab(options: {
       providerRef.current = null;
     };
     // the ydoc is recreated only when the chapter changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chapterId, enabled, ydoc, userId, userName, userColor, userAvatar]);
 
   return {

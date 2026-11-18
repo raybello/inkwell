@@ -135,7 +135,7 @@ export async function duplicateProjectAction(id: string): Promise<ActionState> {
   const { data: project } = await supabase.from("projects").select("*").eq("id", id).single();
   if (!project) return { error: "Project not found." };
 
-  const { id: _drop, created_at, updated_at, share_token, ...rest } = project;
+  const { id: _drop, created_at: _ca, updated_at: _ua, share_token: _st, ...rest } = project;
   const { data: copy, error } = await supabase
     .from("projects")
     .insert({ ...rest, title: `${project.title} (copy)`, owner_id: user.id })
@@ -145,7 +145,7 @@ export async function duplicateProjectAction(id: string): Promise<ActionState> {
 
   const { data: chapters } = await supabase.from("chapters").select("*").eq("project_id", id);
   if (chapters?.length) {
-    const rows = chapters.map(({ id: _id, created_at, updated_at, ...c }) => ({
+    const rows = chapters.map(({ id: _id, created_at: _ca, updated_at: _ua, ...c }) => ({
       ...c,
       project_id: copy.id,
     }));

@@ -213,7 +213,7 @@ export function nextPlan(value: string | null | undefined): Plan | null {
   return i >= 0 && i < PLAN_ORDER.length - 1 ? PLANS[PLAN_ORDER[i + 1]] : null;
 }
 
-/** -1 downgrade, 0 same, 1 upgrade. */
+/** -1 downgrade, 0 same, 1 upgrade. Sign-normalised so callers can switch on it. */
 export function comparePlans(a: string | null | undefined, b: string | null | undefined): number {
-  return PLAN_ORDER.indexOf(getPlan(a).id) - PLAN_ORDER.indexOf(getPlan(b).id);
+  return Math.sign(PLAN_ORDER.indexOf(getPlan(a).id) - PLAN_ORDER.indexOf(getPlan(b).id));
 }

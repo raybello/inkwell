@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getProfile, getSessionUser } from "@/lib/auth";
+import { getSessionUser } from "@/lib/auth";
 import { getProjectContext } from "@/lib/data";
 import { logActivity } from "@/lib/activity";
 import { uploadProjectAsset } from "@/lib/storage";

@@ -4,7 +4,6 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BookMarked,
   ChevronRight,
   Feather,
   Bell,
@@ -16,7 +15,7 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { cn, formatNumber } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui/misc";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { signOutAction } from "@/lib/actions/auth";

@@ -8,7 +8,6 @@ import { ProjectCard } from "@/components/projects/project-card";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input, Select } from "@/components/ui/input";
-import { Tabs } from "@/components/ui/misc";
 import { duplicateProjectAction, deleteProjectAction } from "@/lib/actions/projects";
 import type { ProjectSummary } from "@/lib/data";
 
